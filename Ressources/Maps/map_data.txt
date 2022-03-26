@@ -1,0 +1,13 @@
+#################; x  ;   y; hudx; hudy; color r; g; b;
+Races/map Drift.png; 160; 560; 90; 650; 0; 0; 0
+
+#################; x  ;   y; hudx; hudy; color r; g; b;
+Races/map mirom.png; 970; 250; 1630; 910;    192; 192; 192;
+
+TestsEnvironement/whitemap.png; 500; 500; 0; 0; 255; 255; 255;
+
+ParisTopView/ParisTopView.png; 2100; 1050; 0; 0; 121; 123; 110;
+
+ParisTopView/IntersectionCroix.png; 2500; 2250; 0; 0; 121; 123; 110;
+
+ParisTopView/CircuitUn.png; 960; 980; 0; 0; 121; 123; 110;
