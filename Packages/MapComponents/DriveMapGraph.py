@@ -1,8 +1,8 @@
 import numpy as np
 import Packages.MapComponents.Cython.EuclidianCurves as CyCurves
 
-class Graph:
-    def __init__(self, nodes, arcs, chunkNumber, w, h):
+class Graph(pygame.sprite.Sprite):
+    def __init__(self, nodes, arcs, chunkNumber, w, h, debugLevel = 4):
         self.chunk = chunkNumber*[chunkNumber*[[]]]
         self.chunkNumber = chunkNumber
         self.w = w
@@ -13,12 +13,13 @@ class Graph:
             self.AddNode(node)
         for arc in arcs:
             self.AddArc(arc)
+        self.debugLevel = debugLevel  # Niveau d'informations à afficher à l'écran
 
     def AddNode(self, localisation):  # Ajoute un noeud au graphe
-        if (self.GetNode(localisation) == -1):
+        if (self.GetNode(localisation) == -1):  # Si les coordonées ne correspondent à aucun noeud du graphe
             self.nodes.append(localisation)
             return len(self.nodes) -1
-        else: return self.GetNode(localisation)
+        else: return self.GetNode(localisation)  # On retourne l'indice du noeud
 
     def AddArc(self, i, j, curve, chunksCrossed):  # Ajoute un arc au graphe
         for chunk in chunksCrossed:
@@ -80,6 +81,28 @@ class Graph:
             r += 1
         return Graph.NearestCurveNaif(arcs, M)  # Plus proche point, complexité n
 
+    def update(self, map, screen, dt):  # Overrided
+        pygame.sprite.Sprite.update(self)
+
+    def Render(self, world):  # Invoquée dans la class ScreenRenderer.MapRenderer
+        level = self.debugLevel
+        zoomRatio = world.cameraRect.width/world.worldMap.get_width()
+        if level >= 1:
+            for point in self.nodes:
+                x, y = point
+                NODE_COLOR = imm.Config.Get("graph node color")
+                ARC_COLOR = imm.Config.Get("graph arc color")
+                RADIUS = imm.Config.Get("bezier node radius")
+                RADIUS = int(RADIUS *zoomRatio)
+                ScreenRenderer.HUD.DrawPoint(world.worldMap, x, y, RADIUS, NODE_COLOR)   # On dessinne le point du noeud sur la carte
+        if level >= 2:
+            for (i, j), curve, chunksCrossed in self.arcs:
+                curve = curve.curve
+                lastPoint = curve[0]
+                for i in range(len(1, curve)):
+                    ScreenRenderer.HUD.DrawLine(world.worldMap, point, lastPoint, RADIUS, ARC_COLOR)   # On dessine l'arc sur la carte
+        return
+
     def GenerateGraph(curves, chunkNumber, w, h, pr):  # Génère un graphe à partir des courbes
         def appendOnce(list, n):
             for k in list:
@@ -94,7 +117,7 @@ class Graph:
             prevk = 0  # Dernier indice
             chunksCrossed = []
             for k in range(len(l)):  # Parcours du tracé
-                 # Recherche des intersections entre la courbe et le graphe
+                # Recherche des intersections entre la courbe et le graphe
                 appendOnce(chunksCrossed, CyCurves.EuclidianMap.ChunkOfM(l[k], chunkNumber, w, h))  # On ajoute que la courbe appartient à ce chunk (une seule fois)
                 M, (i2, j2), k2 = graph.NearestCurveOptimized(l[k])
                 if (M == l[k]):  # Intersection !
@@ -115,6 +138,15 @@ class Graph:
 import pygame
 import ScreenRenderer
 import Packages.MapComponents.ImageManager as imm
+""" _references_
+Bezier Curve Point projection source code : https://pomax.github.io/bezierinfo/chapters/projections/project.js
+
+Bezier curve length :https://pomax.github.io/bezierinfo/#arclength
+
+Line - curve intersection source code : https://pomax.github.io/bezierinfo/chapters/intersections/curve-line.js
+
+Curve - Curve Intersection source code : https://pomax.github.io/bezierinfo/chapters/curveintersection/curve-curve.js
+"""
 class BezierCurve(pygame.sprite.Sprite):
     def __init__(self, points, quality, parameters, debugLevel):
         def GenerateCurveMemory(quality):
@@ -184,7 +216,18 @@ class BezierCurve(pygame.sprite.Sprite):
                 lastPoint = point
 
 
-class SplineCurve(pygame.sprite.Sprite):
+""" _references_
+Diff between Bezier and spline curves :https://www.quora.com/What-is-the-difference-between-a-Bezier-curve-and-a-spline#:~:text=The%20main%20difference%20between%20Bezier,points%20are%20on%20the%20curve.
+
+How to draw spline curves : https://www.math.ucla.edu/~baker/149.1.02w/handouts/dd_splines.pdf
+
+Different approches to find the intersection of 2 spline curves :https://medium.com/@all2one/intersecting-two-splines-70a1d901c446
+
+Coktail of 2 techniques, the fastest one, but the most complicated one :https://www.sciencedirect.com/science/article/abs/pii/S0010448598000529?via%3Dihub
+
+One technique, efficient with high amount of beziers curve in one spline curve and simple : https://pomax.github.io/bezierinfo/#intersections
+"""
+class B_SplineCurve(pygame.sprite.Sprite):
     def __init__(self, points, quality, parameters, debugLevel):
         pygame.sprite.Sprite.__init__(self)  # Initialisation pygame
         self.pointsA = []  # Points de contrôles det points de controles des courbes de Béziers

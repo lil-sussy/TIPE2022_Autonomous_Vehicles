@@ -14,7 +14,7 @@
         "acceleration debug color": [40, 40, 200],
         
         // Bezier Curves
-        "bezier curve quality": 4000, // Nombre de points maximum pour tracer une courbe de Bézier
+        "bezier curve quality": 100, // Nombre de points maximum pour tracer une courbe de Bézier
         "bezier point radius": 13, // Rayon de rendu des points de la courbe de Bézier
         "bezier curve radius": 8, // Rayon de rendu des points de la courbe de Bézier
         "bezier point color": [125, 96, 223],
@@ -24,6 +24,11 @@
         // Spline Curves
         "spline curve interpolation point color" : [156, 192, 249],
         "spline curve bezier point color" : [156, 249, 209],
+        
+        // Graph
+        "graph node color": [79, 234, 166],
+        "graph node radius": 20,
+        "graph arc color": [79, 234, 229],
 
         // Fin du document
         "copy": "copy",

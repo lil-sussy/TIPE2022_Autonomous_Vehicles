@@ -75,7 +75,7 @@ def SplineCurvef():
     debugLevel = 4
     quality = 1 # 100%
     parameters = [0.7]
-    curve1 = Graph.SplineCurve([point1, point2, point3, point4, point5], quality, [], debugLevel)
+    curve1 = Graph.B_SplineCurve([point1, point2, point3, point4, point5], quality, [], debugLevel)
     point = curve1.Interpolate(0.7)
     # curve2 = Graph.SplineCurve([point1, point3, point4, point2, point], quality, [], debugLevel)
     MapName = "TestsEnvironement/whitemap.png"
@@ -89,10 +89,26 @@ pathCurve1 = "Ressources/Maps/ParisTopView/CurvesTest1/Highways/curve1.png"
 
 # GenerateGraph(pathCurve1)
 # GenerateMap(pathCurve1)
-
-# https://www.quora.com/What-is-the-difference-between-a-Bezier-curve-and-a-spline#:~:text=The%20main%20difference%20between%20Bezier,points%20are%20on%20the%20curve.
-
-# https://www.math.ucla.edu/~baker/149.1.02w/handouts/dd_splines.pdf
-
-
 SplineCurvef()
+
+"""_references_
+
+Diff between Bezier and spline curves :https://www.quora.com/What-is-the-difference-between-a-Bezier-curve-and-a-spline#:~:text=The%20main%20difference%20between%20Bezier,points%20are%20on%20the%20curve.
+
+How to draw spline curves : https://www.math.ucla.edu/~baker/149.1.02w/handouts/dd_splines.pdf
+
+Different approches to find the intersection of 2 spline curves :https://medium.com/@all2one/intersecting-two-splines-70a1d901c446
+
+Coktail of 2 techniques, the fastest one, but the most complicated one :https://www.sciencedirect.com/science/article/abs/pii/S0010448598000529?via%3Dihub
+
+One technique, efficient with high amount of beziers curve in one spline curve and simple : https://pomax.github.io/bezierinfo/#intersections
+
+Line - curve intersection source code : https://pomax.github.io/bezierinfo/chapters/intersections/curve-line.js
+
+Curve - Curve Intersection source code : https://pomax.github.io/bezierinfo/chapters/curveintersection/curve-curve.js
+
+Bezier curve length :https://pomax.github.io/bezierinfo/#arclength
+"""
+
+
+
