@@ -96,13 +96,13 @@ class Graph(pygame.sprite.Sprite):
                 ARC_COLOR = imm.Config.Get("graph arc color")
                 RADIUS = imm.Config.Get("bezier node radius")
                 RADIUS = int(RADIUS *zoomRatio)
-                ScreenRenderer.HUD.DrawPoint(world.worldMap, x, y, RADIUS, NODE_COLOR)   # On dessinne le point du noeud sur la carte
+                ScreenRenderer.HUD.RenderPoint(world.worldMap, x, y, RADIUS, NODE_COLOR)   # On dessinne le point du noeud sur la carte
         if level >= 2:
             for (i, j), curve, chunksCrossed in self.arcs:
                 curve = curve.curve
                 lastPoint = curve[0]
                 for i in range(len(1, curve)):
-                    ScreenRenderer.HUD.DrawLine(world.worldMap, point, lastPoint, RADIUS, ARC_COLOR)   # On dessine l'arc sur la carte
+                    ScreenRenderer.HUD.RenderSegment(world.worldMap, point, lastPoint, RADIUS, ARC_COLOR)   # On dessine l'arc sur la carte
         return
 
     def GenerateGraph(curves, chunkNumber, w, h, pr):  # Génère un graphe à partir des courbes
@@ -195,7 +195,7 @@ class BezierCurve(pygame.sprite.Sprite):
             point1 = self.curve[0]
             for i in range(len(self.curve) -1):
                 point2 = self.curve[i+1]
-                ScreenRenderer.HUD.DrawLine(world.worldMap, point1, point2, SIZE, CURVE_COLOR)   # On dessin le petit trait sur la carte
+                ScreenRenderer.HUD.RenderSegment(world.worldMap, point1, point2, SIZE, CURVE_COLOR)   # On dessin le petit trait sur la carte
                 point1 = point2
         RADIUS = imm.Config.Get("bezier point radius")
         RADIUS = int(RADIUS *zoomRatio)
@@ -203,12 +203,12 @@ class BezierCurve(pygame.sprite.Sprite):
             SPECIAL_POINT_COLOR = imm.Config.Get("bezier special point color")
             for t in self.parameters:
                 x, y = self.Interpolate(t)   # Coordonées du point spécial
-                ScreenRenderer.HUD.DrawPoint(world.worldMap, x, y, RADIUS, SPECIAL_POINT_COLOR)
+                ScreenRenderer.HUD.RenderPoint(world.worldMap, x, y, RADIUS, SPECIAL_POINT_COLOR)
         if level >= 3:
             POINT_COLOR = imm.Config.Get("bezier point color")
             for point in self.points:
                 x, y = point   # Coordonées du point définissant la courbe de Bézier
-                ScreenRenderer.HUD.DrawPoint(world.worldMap, x, y, RADIUS, POINT_COLOR)
+                ScreenRenderer.HUD.RenderPoint(world.worldMap, x, y, RADIUS, POINT_COLOR)
         if level >= 4:
             LINE_COLOR = imm.Config.Get("bezier point color")
             SIZE = imm.Config.Get("bezier curve radius")/3
@@ -216,7 +216,7 @@ class BezierCurve(pygame.sprite.Sprite):
             lastPoint = self.points[0]
             for point in self.points:
                 x, y = point   # Coordonées du point définissant la courbe de Bézier
-                ScreenRenderer.HUD.DrawLine(world.worldMap, lastPoint, point, SIZE, LINE_COLOR)
+                ScreenRenderer.HUD.RenderSegment(world.worldMap, lastPoint, point, SIZE, LINE_COLOR)
                 lastPoint = point
 
 
@@ -268,16 +268,16 @@ class B_SplineCurve(pygame.sprite.Sprite):
         if self.debugLevel >= 2:  # Rendu des points d'interpolations des courbes de Béziers
             for point in self.sPoints:
                 x, y = point   # Coordonées du point définissant la courbe de Bézier
-                ScreenRenderer.HUD.DrawPoint(world.worldMap, x, y, RADIUS, S_POINT_COLOR)
+                ScreenRenderer.HUD.RenderPoint(world.worldMap, x, y, RADIUS, S_POINT_COLOR)
         if self.debugLevel >= 3:
             for point in self.cPoints:  # Rendu des points de contrôle de la courbe de Spline
                 x, y = point
-                ScreenRenderer.HUD.DrawPoint(world.worldMap, x, y, RADIUS, B_POINT_COLOR)
+                ScreenRenderer.HUD.RenderPoint(world.worldMap, x, y, RADIUS, B_POINT_COLOR)
         if self.debugLevel >= 4:
             prevC = self.cPoints[0]
             for i in range(len(self.cPoints)): # Rendu du polygone de control de la courbe B Spline
                 Ci = self.cPoints[i]
-                ScreenRenderer.HUD.DrawLine(world.worldMap, prevC, Ci, LINE_RADIUS, B_POINT_COLOR)
+                ScreenRenderer.HUD.RenderSegment(world.worldMap, prevC, Ci, LINE_RADIUS, B_POINT_COLOR)
                 prevC = Ci
 
     def GeneratesBezierControlPoints(self):  # Génère les points de controls de la courbe de Bézier passant par les n points de {points} appélés point d'interpolations S0 :: Sn

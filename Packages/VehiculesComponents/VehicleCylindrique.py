@@ -136,7 +136,7 @@ class Vehicle(pygame.sprite.Sprite):
         spriteMiddle = (imgRec.w/2, imgRec.h/2)
         self.sprite_image, self.sprite_origin = blitRotate(self.image, carMiddle, spriteMiddle, self.alpha) # Position du centre de l'image : centre de la voiture, rotation autour du centre de l'image d'un angle alpha
     
-    def RenderCarOnScreen(self, map, screen): # Rendu de la hitbox ect..., fonction appelé par ScreenRenderer
+    def Render(self, map, screen): # Rendu de la hitbox ect..., fonction appelé par ScreenRenderer
         level = self.debugLevel # Niveau de débuggage, niveau de de détails supplémentaires
         if level >= 0: # Niveau 0 est le niveau par défaut, niveau -1 : il est possible de ne pas faire le rendu des voitures
             screen.blit(self.sprite_image, self.sprite_origin) # Rendu du sprite de la voiture

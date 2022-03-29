@@ -3,6 +3,11 @@
         "ressource path": "./Ressources/",
         "maps path": "Maps/",
         "neat path": "neat/",
+
+        // Applications (pygame)
+        "delta time max millis": 500,  // Temps maximum entre 2 update() (en millisecondes). 2 FPS min
+        "pause font": ["consolas", 32, "black"],  // Police du texte de pause
+        "default font": ["arial", 20, "black"],  // Police d'écriture par défaut
         
         // ScreenRenderer
         "camera move speed": 20, // Vitesse de la caméra
@@ -33,9 +38,5 @@
         // Graph
         "graph node color": [79, 234, 166],
         "graph node radius": 20,
-        "graph arc color": [79, 234, 229],
-
-        // Fin du document
-        "copy": "copy",
-        "fin": "fin"
+        "graph arc color": [79, 234, 229]
     }

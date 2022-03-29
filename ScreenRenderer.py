@@ -1,11 +1,9 @@
 import pygame
 import numpy as np
 import ctypes
-import sys
 import os
 ctypes.windll.user32.SetProcessDPIAware()
 import Packages.MapComponents.ImageManager as imm
-import Packages.VehiculesComponents.VehicleCylindrique as vh
 
 # Les collisions entre voitures sont gérer par la class Sprite de pygame
 # Les collisions avec les bords de la route sont gérer par des détections de couleurs des coins de la voiture
@@ -14,11 +12,10 @@ class WorldRenderer:
         self.path = os.path.realpath(imm.Config.Get("ressource path") + imm.Config.Get("maps path"))
         self.screenW = screenW # La longueur de l'écran
         self.screenH = screenH # La largeur de l'écran
-        self.sprites = [] # Possibilité de faire le rendu d'éléments sur la carte
         self.fov_width = screenW # Longueur du "rectangle caméra", longueur de la carte découpé et représentée sur l'écran
         self.fov_height = screenH # Largeur de la découpe de la carte.
 
-    def LoadWorldFiles(self, mapName, mapDataXML = ""):
+    def LoadWorldFiles(self, mapName, jsonPath = ""):
         self.mapName = mapName # Le nom de la carte (inutile)
         path = os.path.realpath(imm.Config.Get("ressource path") + imm.Config.Get("maps path") + self.mapName)
         self.mapPicture = pygame.image.load(path).convert() # Convert() améliore les performances
@@ -29,7 +26,6 @@ class WorldRenderer:
 
     def InitWorldRenderer(self, mapName):
         self.LoadWorldFiles(mapName) # Initialisation de la carte
-        self.Sprites = pygame.sprite.Group([]) # Initialisation des Sprites
         self.previous_cameraRect = pygame.Rect(0, 0, 1, 1) # Pour détecter si le zoom a changé
         self.camera = None # Initialisation
 
@@ -72,102 +68,172 @@ class WorldRenderer:
 
     def RenderMapOnScreen(self, screen):  # Rendu des informations additionelles des sprites
         self.worldMap.blit(self.mapPicture, (0, 0)) # On efface les anciens dessin sur la carte
-        for sprite in self.Sprites:
-            if isinstance(sprite, vh.Vehicle):
-                sprite.RenderCarOnScreen(self, self.worldMap) # On dessine sur la CARTE (pas sur l'écran)
-            else:
-                sprite.Render(self)
         screen.blit(self.empty_background, (0, 0)) # Dans l'ordre mapPicture -> worldmap -> camera -> screen
 
-    def UpdateMap(self, screen, dt):
+    def UpdateMap(self, dt):
         def Zoom(self):
             if ( self.cameraRect != self.previous_cameraRect ): # Si le zoom a changé (taille du rectangle FOV)
                 if ( self.cameraRect.width != self.previous_cameraRect.width or self.cameraRect.height != self.previous_cameraRect.height ):
                     self.camera = pygame.Surface( ( self.cameraRect.width, self.cameraRect.height ) ) # On change le zoom (la taille de zom)
                 self.previous_cameraRect = self.cameraRect.copy() # on copie la taille du nouveau rectangle FOV (zoom)
-        self.Sprites.update(self, screen, dt)#Update the sprites
         Zoom(self) # Zoom sur la carte si la TAILLE du rectangle camera sur la carte a changé
         screenSize = (self.screenW, self.screenH) # Dimension de l'écran
         pygame.transform.scale(self.camera, screenSize, self.empty_background) # On agrandit ou rétréssie zoomImage pour qu'il corresponde aux longeurs de l'écran, on rempli le reste avec du vide (emptyBackground)
         self.camera.blit(self.worldMap, (0, 0), self.cameraRect) # On dessine la partie découpé par le rectangle FOV (cameraRect) de la carte sur zoomImage
 
+import Packages.MapComponents.DriveMapGraph as graph
 class HUD:
-    def DrawPoint(surface, x, y, r, color):
+    def __init__(self, world, screen):
+        self.worldMap = world
+        self.screen = screen
+        self.screenW = screen.get_width()
+        self.screenH = screen.get_height()
+        self.worldW = world.get_width()
+        self.worldH = world.get_height()
+        self.defaultFont = imm.Config.Get("default font")  # Initialisation de la police d'écriture par défaut
+        self.mapPoints = []  # Points déssinés sur la carte
+        self.mapSegments = [] # Lignes déssinées sur la carte
+        self.mapSprites = pygame.sprite.Group([]) # Initialisation des Sprites
+
+    def Update(self, dt):
+        for sprite in self.mapSprites:
+            sprite.Update(dt)
+
+    def RenderScreenHud(self):
+        return
+
+    def RenderWorldHud(self):
+        for sprite in self.srpites:
+            sprite.Render(self.worldMap)
+        for segment in self.mapSegments:
+            HUD.RenderSegment(self.worldMap, segment.x1, segment.x2, segment.size, segment.color)
+        for point in self.mapPoints:
+            HUD.RenderPoint(self.worldMap, point.x1, point.x2, point.size, point.color)
+
+    def AddWorldSprite(self, sprite):
+        self.mapSprites.append(sprite)
+
+    def AddWorldPoint(self, point, r, color):
+        self.mapPoints.append((point, r, color))
+
+    def AddWorldSegment(self, segment, r, color):
+        self.mapPoints.append((segment.x1, segment.x2, r, color))
+
+    def DefaultPointOnMap(self, point):
+        r = imm.Config.Get("default point radius")
+        color = imm.Config.Get("spline curve interpolation point color")
+        self.AddWorldPoint(point, r, color)
+
+    def DefaultSegmentOnMap(self, segment):
+        r = imm.Config.Get("default line radius")
+        color = imm.Config.Get("spline curve interpolation point color")
+        self.AddWorldSegment(self.worldMap, segment.x1, segment.x2, r, color)
+        self.AddWorldPoint(segment.x1, r, color)
+        self.AddWorldPoint(segment.x2, r, color)
+
+    def RenderPolygon(surface, polygon):
+        prevP = polygon[0]
+        HUD.RenderPoint(surface, prevP)
+        for i in range(1, len(polygon)):
+            HUD.RenderSegment(surface, graph.Segment(polygon[i], prevP))
+            prevP = polygon[i]
+
+    def RenderPoint(surface, point, r, color):
+        (x, y) = point[0], point[1]
         BLACK = (0, 0, 0)  # Contours noirs
         dr = 3  # Coutours de 3 pixels
         pygame.draw.circle(surface, BLACK, (x, y), r+dr, 0)  # Contour noirs du point
         pygame.draw.circle(surface, color, (x, y), r, 0)  # Le point
-    def DrawLine(surface, point1, point2, size, color):
-        BLACK = (0, 0, 0)  # Contours de couleur noirs
-        dsize = 8  # Coutours de 3 pixels
-        # pygame.draw.line(surface, BLACK, point1, point2, size+dsize)  # Contour noirs du trait
+
+    def RenderSegment(surface, point1, point2, size, color):
         pygame.draw.line(surface, color, point1, point2, size)
 
-
-class ScreenHud:
-    def __init__(self, screen):
-        self.generation_font = pygame.font.SysFont("Arial", 60)  # Initialisation des polices spéciales d'écritures
-        self.alive_font = pygame.font.SysFont("Arial", 40)
-        self.screen = screen
+    def RenderText(surface, position, text, font):
+        text = pygame.font.SysFont(font[0], font[1]).render('Pause', True, pygame.color.Color(font[2]))
+        surface.blit(text, position)
 
 
-class PygameApplication:
-    def __init__(self):
-        return
+def emptyFunction():  # Fonction vide, valeur par défaut
+    return
 
 
-import Packages.VehiculesComponents.VehicleCylindrique as vh
-#CONSTANTS
-DELTA_TIME_MAX_MILIS = 5 #the maximum of time between updates
-import neat
-class NeatApplication:
-    def __init__(self, screenW, screenH):
+class Application:
+    def __init__(self, customInputs = emptyFunction, customRender = emptyFunction, customUpdate = emptyFunction, customInitialisation = emptyFunction):
+        self.customInputs = customInputs
+        self.customRender = customRender
+        self.customUpdate = customUpdate
+        self.customInitialisation = customInitialisation
+        self.pauseFont = imm.Config.Get("pause font")  # Police d'écriture du mot "pause" à l'écran
+
+    def Init(self, screenW, screenH, mapName):
         self.screenW = screenW
         self.screenH = screenH
-        self.genomes = None #to be defined later
-        self.config = None
-
-    def InitPygame(self, mapName):
-        #Init Pygame
-        pygame.init()
-        self.screen = pygame.display.set_mode((self.screenW, self.screenH))
-        self.clock = pygame.time.Clock()
-        #Init
+        pygame.init()  # Intialisation pygame
+        self.screen = pygame.display.set_mode((self.screenW, self.screenH))  # Initialisation de l'affichage
+        self.clock = pygame.time.Clock()  # Initialisation de la clock
         self.paused = False
-        self.map = WorldRenderer(self.screenW, self.screenH)
-        self.map.InitWorldRenderer(mapName)
+        self.map = WorldRenderer(self.screenW, self.screenH)  # Intialisation de la carte
+        self.map.InitWorldRenderer(mapName)  # Initialisation du monde
+        self.hud = HUD(self.map.worldMap, self.screen)  # Initialisation de l'HUD (interface)
+        self.customInitialisation(self)
 
-    def ProcessPygameEvents(self, events):
-        # Exit On Quit Event
-        for event in events:
-            if event.type == pygame.QUIT: self.appRunning = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    self.paused = not self.paused
-        self.map.MapPygameCommands(events)
+    def UpdateAll(self, dt):
+        def ProcessPygameEvents(events):
+            # Exit On Quit Event
+            for event in events:
+                if event.type == pygame.QUIT:  # arret de l'application
+                    self.appRunning = False
+                if event.type == pygame.KEYDOWN:  # Pause de l'application
+                    if event.key == pygame.K_SPACE:
+                        self.paused = not self.paused
+            self.map.MapPygameCommands(events)
+            self.customInputs(events)
+        events = pygame.event.get()  # Evenement d'inputs
+        ProcessPygameEvents(events)  # Traitement des commandes
+        self.map.UpdateMap(dt)  # Mise à jour du monde
+        self.hud.Update(dt)
+        self.customUpdate(self, dt)  # Traitements supplémentaires optionnels
 
-    def RunPygame(self, initialisationTIPE, Update):
-        initialisationTIPE(self)
-        self.appRunning = True
-        #Texts to be rendered:
-        SPauseText = pygame.font.SysFont('Consolas', 32).render('Pause', True, pygame.color.Color('Black'))
+    def RenderAll(self):
+        self.map.RenderMapOnScreen(self.screen) # Rendu de la carte sur l'écran
+        self.hud.RenderWorldHud()  # Rendu de "l'interface de la carte"
+        self.customRender(self)  # rendus supplémentaires optionnels
+        self.hud.RenderScreenHud()  # Rendu de l'interface écran
+        pygame.display.flip()  # On rend tout sur l'écran
+
+    def RenderPause(self):
+        self.hud.renderText(self.screen, self.hud.center, "Pause", self.pauseFont)  # Rendu du mot "Pause" au centre de l'écran
+
+    def Run(self):
+        self.appRunning = True  # Booléen, application en cours d'éxécution
+        MAX = imm.Config.Get("delta time max millis")  # Temps maximum entre les update()
         while(self.appRunning):
-            self.ProcessPygameEvents(pygame.event.get())
-            Update(self)
-            if self.paused:
-                #Display Paused Text
-                self.screen.blit(SPauseText, (100, 100))
+            if self.paused:  # Pause
+                self.RenderPause()
             else:
-                #Update everything
                 dt = self.clock.get_time()
-                if(dt >= DELTA_TIME_MAX_MILIS): #Lower than 1/DELTA_TIME_MAX fps
-                    dt = DELTA_TIME_MAX_MILIS
-                self.map.UpdateMap(self.screen, (float(dt)/1000)) #Conversion de dt en secondes
-                #Update on the screen
-                pygame.display.flip()
-                #Render everything
-                self.map.RenderMapOnScreen(self.screen) # Rendu de la carte sur l'écran
+                if(dt >= MAX): #Lower than 1/DELTA_TIME_MAX fps
+                    dt = MAX
+                self.UpdateAll(dt)
+                self.RenderAll()
                 self.clock.tick(60) # On garde le control du temps, 60 fps maximum
+
+
+class SimpleApplication(Application):
+    def __init__(self, mapName, customInputs = emptyFunction, customRender = emptyFunction, customUpdate = emptyFunction, customInitialisation = emptyFunction):
+        Application.__init__(self, customInputs, customRender, customUpdate, customInitialisation)
+        Application.Init(self, 1920, 1080, mapName)
+
+    def Run(self):
+        Application.Run(self)
+
+import Packages.VehiculesComponents.VehicleCylindrique as vh
+import neat
+class NeatAplication(Application):
+    def __init__(self):
+        self.config = None
+        self.genome = None
+        Application.__init__(self)
 
     def InNeat(self, ressourcesPath, neatPath):
         #Setup Neat
@@ -194,7 +260,7 @@ class NeatApplication:
             g.fitness = 0
             self.map.Sprites.add(vh.Vehicle.Copy(car))
 
-    def RunSimulation(self, MapName, InitSimulation, Update, car, neatPath):
+    def Run(self, MapName, InitSimulation, Update, car, neatPath):
         dlbda = 0.2 # Constante
         dc = 600 # Constante
         def UpdateCarsInformations():
