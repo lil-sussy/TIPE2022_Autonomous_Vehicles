@@ -13,7 +13,7 @@ def AsUint8(array):
     return array.astype(np.uint8)
 
 def AsUint16(array):
-    array = np.asarray(array)
+    array = np.asarray(array, dtype=np.uint16)
     return array.astype(np.uint16)
 
 def Show(array):

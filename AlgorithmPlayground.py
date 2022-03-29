@@ -74,22 +74,153 @@ def SplineCurvef():
     point5 = np.asarray([7, -5])*100 + center
     debugLevel = 4
     quality = 1 # 100%
-    parameters = [0.7]
     curve1 = Graph.B_SplineCurve([point1, point2, point3, point4, point5], quality, [], debugLevel)
-    point = curve1.Interpolate(0.7)
-    # curve2 = Graph.SplineCurve([point1, point3, point4, point2, point], quality, [], debugLevel)
     MapName = "TestsEnvironement/whitemap.png"
     app = ScreenRenderer.NeatApplication(1920, 1080)
     app.InitPygame(MapName)
     app.map.Sprites.add(curve1)
-    # app.map.Sprites.add(curve2)
+    app.RunPygame(initialisation, update)
+
+def ArrayConverter(nps):
+    array = []
+    for el in nps:
+        array.append(el)
+    return array
+
+def DrawPoint(app, point):
+    x, y = point[0], point[1]
+    r = imm.Config.Get("default point radius")
+    color = imm.Config.Get("spline curve interpolation point color")
+    ScreenRenderer.HUD.DrawPoint(app.map.worldMap, x, y, r, color)
+
+def DrawSegment(app, segment):
+    r = imm.Config.Get("default line radius")
+    color = imm.Config.Get("spline curve interpolation point color")
+    DrawPoint(app, segment.x1)
+    DrawPoint(app, segment.x2)
+    ScreenRenderer.HUD.DrawLine(app.map.worldMap, segment.x1, segment.x2, r, color)
+
+def DrawPolygon(app, polygon):
+    prevP = polygon[0]
+    DrawPoint(app, prevP)
+    for i in range(1, len(polygon)):
+        DrawSegment(app, Graph.Segment(polygon[i], prevP))
+        prevP = polygon[i]
+
+def OnGrid(point, division, center):
+    point = np.asarray(point)
+    point = point*division + np.asarray(center)*division
+    return point.tolist()
+
+def OnGrids(points, division, center):
+    newPoints = []
+    for point in points:
+        newPoints.append(OnGrid(point, division, center))
+    return newPoints
+
+def SplineCurveIntersection():
+    def initialisation(app):
+        return
+    pointList = [[1, 1], [-1, -2], [1, -4], [4, -3], [7, -5]]
+    pointList1 = OnGrids(pointList, 100, [5, 7])
+    pointList2 = OnGrids(pointList, 100, [2.5, 10])
+    debugLevel = 1
+    quality = 1 # 100%
+    curve1 = Graph.B_SplineCurve(pointList1, quality, [], debugLevel)
+    curve2 = Graph.B_SplineCurve(pointList2, quality, [], debugLevel)
+    offset =  imm.Config.Get("spline intersection offset")
+    intersections = curve1.Intersection(curve2, offset)
+    def update(app):
+        for point in intersections:
+            DrawPoint(app, point)
+    MapName = "TestsEnvironement/whitemap.png"
+    app = ScreenRenderer.NeatApplication(1920, 1080)
+    app.InitPygame(MapName)
+    app.map.Sprites.add(curve1)
+    app.map.Sprites.add(curve2)
+    app.RunPygame(initialisation, update)
+
+def SplineCurveProjection():
+    def initialisation(app):
+        return
+    center = ArrayConverter(np.asarray([500, 700]))
+    point1 = ArrayConverter(np.asarray([1, 1])*100 + center)
+    point2 = ArrayConverter(np.asarray([-1, -2])*100 + center)
+    point3 = ArrayConverter(np.asarray([1, -4])*100 + center)
+    point4 = ArrayConverter(np.asarray([4, -3])*100 + center)
+    point5 = ArrayConverter(np.asarray([7, -5])*100 + center)
+    debugLevel = 1
+    quality = 1 # 100%
+    curve1 = Graph.B_SplineCurve([point1, point2, point3, point4, point5], quality, [], debugLevel)
+    offset = imm.Config.Get("spline projection offset")
+    x0 = ArrayConverter(np.asarray([500, 500]))
+    projection = curve1.Projection(x0, offset)
+    def update(app):
+        DrawPoint(app, projection)
+        DrawPoint(app, x0)
+    MapName = "TestsEnvironement/whitemap.png"
+    app = ScreenRenderer.NeatApplication(1920, 1080)
+    app.InitPygame(MapName)
+    app.map.Sprites.add(curve1)
+    app.RunPygame(initialisation, update)
+
+def CurveWrapperTheorem():
+    def initialisation(app):
+        return
+    center = ArrayConverter(np.asarray([500, 700]))
+    point1 = ArrayConverter(np.asarray([1, 1])*100 + center)
+    point2 = ArrayConverter(np.asarray([-1, -2])*100 + center)
+    point3 = ArrayConverter(np.asarray([1, -4])*100 + center)
+    point4 = ArrayConverter(np.asarray([4, -3])*100 + center)
+    point5 = ArrayConverter(np.asarray([7, -5])*100 + center)
+    debugLevel = 1
+    quality = 1 # 100%
+    curve1 = Graph.B_SplineCurve([point1, point2, point3, point4, point5], quality, [], debugLevel)
+    polygon0 = curve1.cPoints
+    polygon1 = curve1.bPoints
+    polygons = [polygon0, polygon1]
+    N = 10
+    for i in range(N-1):
+        lastPolygon = polygons[len(polygons) - 1]
+        polygons.append(Graph.B_SplineCurve.CurveWrapperTest(lastPolygon, 1/2))
+    def update(app):
+        DrawPolygon(app, polygons[0])
+        DrawPolygon(app, polygons[1])
+        DrawPolygon(app, polygons[len(polygons) -1])
+        return
+    MapName = "TestsEnvironement/whitemap.png"
+    app = ScreenRenderer.NeatApplication(1920, 1080)
+    app.InitPygame(MapName)
+    app.map.Sprites.add(curve1)
+    app.RunPygame(initialisation, update)
+
+def SplineCurveCutter():
+    def initialisation(app):
+        return
+    center = ArrayConverter(np.asarray([500, 700]))
+    point1 = ArrayConverter(np.asarray([1, 1])*100 + center)
+    point2 = ArrayConverter(np.asarray([-1, -2])*100 + center)
+    point3 = ArrayConverter(np.asarray([1, -4])*100 + center)
+    point4 = ArrayConverter(np.asarray([4, -3])*100 + center)
+    point5 = ArrayConverter(np.asarray([7, -5])*100 + center)
+    debugLevel = 1
+    quality = 1 # 100%
+    curve1 = Graph.B_SplineCurve([point1, point2, point3, point4, point5], quality, [], debugLevel)
+    curve1, curve2 = curve1.Cut(3.5)
+    def update(app):
+        return
+    MapName = "TestsEnvironement/whitemap.png"
+    app = ScreenRenderer.NeatApplication(1920, 1080)
+    app.InitPygame(MapName)
+    app.map.Sprites.add(curve1)
+    app.map.Sprites.add(curve2)
     app.RunPygame(initialisation, update)
 
 pathCurve1 = "Ressources/Maps/ParisTopView/CurvesTest1/Highways/curve1.png"
 
 # GenerateGraph(pathCurve1)
 # GenerateMap(pathCurve1)
-SplineCurvef()
+SplineCurveProjection()
 
 """_references_
 

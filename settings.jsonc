@@ -7,6 +7,8 @@
         // ScreenRenderer
         "camera move speed": 20, // Vitesse de la caméra
         "camera zoom speed": 0.05, // 5%
+        "default point radius": 5, // Rayon des points par défaut
+        "default line radius": 2, // Epaisseur des lignes par défaut
         
         // Cylindrical Vehicule Debug
         "virage debug color": [60, 210, 60],
@@ -21,9 +23,12 @@
         "bezier curve color": [223, 141, 222],
         "bezier special point color": [199, 34, 104],
         
-        // Spline Curves
+        // B-Spline Curves
         "spline curve interpolation point color" : [156, 192, 249],
         "spline curve bezier point color" : [156, 249, 209],
+        "spline curve line radius" : 3,
+        "spline intersection offset" : 200,  // intersection à 200 pixels (sur la courbe) près (algorithm lent et très précis)
+        "spline projection offset" : 20,  // projection à 20 pixels près (algorithme rapide et précis)
         
         // Graph
         "graph node color": [79, 234, 166],
