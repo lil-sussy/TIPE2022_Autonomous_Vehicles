@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-import Packages.MapComponents.ImageManager as imm
+import Packages.RessourcesManagers.FileManager as fm
 
 #(x, y) _______________ x (le référentiel de l'écran)
 #      |
@@ -143,9 +143,9 @@ class Vehicle(pygame.sprite.Sprite):
         if level >= 1:
             pygame.draw.rect(screen, (0, 255, 0), (*self.rect.topleft, *self.rect.size), 2) # Dessin de la HitBox de la voiture
         if level >= 2: # Niveau max : niveau 3
-            GREEN = tuple(imm.Config.Get("virage debug color"))
-            RED = tuple(imm.Config.Get("speed debug color"))
-            BLUE = tuple(imm.Config.Get("acceleration debug color"))
+            GREEN = tuple(fm.Config.Get("virage debug color"))
+            RED = tuple(fm.Config.Get("speed debug color"))
+            BLUE = tuple(fm.Config.Get("acceleration debug color"))
             (x, y) = self.rect.center; length = 500
             coef = 1
             (vx, vy) = self.v; (ax, ay) = self.a

@@ -30,7 +30,7 @@ couplefrein = 2*1000
 lbda = 0; dlambda = 0.02
 lastlbda = 0; lastFM = 0; lastCF = 0
 
-import Packages.MapComponents.ImageManager as imm
+import Packages.RessourcesManagers.FileManager as fm
 import Packages.VehiculesComponents.VehicleCylindrique as vh
 def Experience3():
     def InitSimulation(app):
@@ -62,48 +62,48 @@ def Experience3():
             self.b = b
     roadColor = Color(121, 123, 110)
     debugLevel = 3 # 3 niveau de debugage, information supplémentaires du sprite
-    basicCar = vh.Vehicle(930, 1000, masse, J, R, JR, E/2, E, roadColor, imm.Config.Get("ressource path"), debugLevel)
-    App.RunSimulation(MapName, Initialisation, Update, basicCar, imm.Config.Get("neat path"))
+    basicCar = vh.Vehicle(930, 1000, masse, J, R, JR, E/2, E, roadColor, fm.Config.Get("ressource path"), debugLevel)
+    App.RunSimulation(MapName, Initialisation, Update, basicCar, fm.Config.Get("neat path"))
 
 #VehiculeCylindriqueMapBlanche2()
 
 
-import Packages.MapComponents.ImageManager as imm
+import Packages.RessourcesManagers.FileManager as fm
 
 import numpy as np
 
 import pygame
-import Packages.MapComponents.ImageManager as imm
+import Packages.RessourcesManagers.FileManager as fm
 
 # path = "C:\\Users\\nayke\\OneDrive\\devlab\\TIPE 2022\\AVehiclesMap\\Ressources\\Maps\\ParisTopView\\CurvesTest1\\"
 # curve1BP = np.asarray(Image.open(path + "Highways\\Curve1.png"))
 # w = len(curve1BP); h = len(curve1BP[0])
 
-import Packages.MapComponents.DriveMapGraph as Graph
+import Packages.WorldComponents.DriveMapGraph as Graph
 def GenerateCurve(bppath):
-    progression = imm.ProgressBar("Génération de la courbe...") # Bar de progression
-    blueprint = imm.Open(bppath)[0]
+    progression = fm.ProgressBar("Génération de la courbe...") # Bar de progression
+    blueprint = fm.OpenImage(bppath)[0]
     curve = Graph.BasicCurve.BluePrintToCurve(blueprint, progression)
     progression.Done()
     return curve
 
 import ScreenRenderer
-import Packages.MapComponents.Cython.EuclidianCurves as Curves
+import Packages.WorldComponents.Cython.EuclidianCurves as Curves
 def GenerateMap(pathCurve1):
-    progression = imm.ProgressBar("Génération de la carte...") # Bar de progression
+    progression = fm.ProgressBar("Génération de la carte...") # Bar de progression
     curve1 = GenerateCurve(pathCurve1)
-    ignored, w, h = imm.Open(pathCurve1)
+    ignored, w, h = fm.OpenImage(pathCurve1)
     dr = 30; R = 650
-    background = imm.AsUint8(w*[h*[[0, 0, 0, 255]]]) #taille w*h*4
-    curves = imm.AsUint16([curve1]) # Liste de courbes
+    background = fm.AsUint8(w*[h*[[0, 0, 0, 255]]]) #taille w*h*4
+    curves = fm.AsUint16([curve1]) # Liste de courbes
     result = Curves.DrawRoadsOnMap(curves, background, dr/3, dr, R//2)
     progression.Done()
-    imm.Show(result)
+    fm.ShowImage(result)
 
 def GenerateGraph(pathCurve1):
-    progression = imm.ProgressBar("Génération du graphe...") # Bare de progression
+    progression = fm.ProgressBar("Génération du graphe...") # Bare de progression
     curve1 = GenerateCurve(pathCurve1)
-    road, w, h = imm.Open(pathCurve1)
+    road, w, h = fm.OpenImage(pathCurve1)
     chunkNumber = 16
     graph = Graph.Graph.GenerateGraph([curve1], chunkNumber, w, h, progression)
     print(graph)
@@ -158,13 +158,13 @@ def ArrayConverter(nps):
 
 def DrawPoint(app, point):
     x, y = point[0], point[1]
-    r = imm.Config.Get("default point radius")
-    color = imm.Config.Get("spline curve interpolation point color")
+    r = fm.Config.Get("default point radius")
+    color = fm.Config.Get("spline curve interpolation point color")
     ScreenRenderer.HUD.RenderPoint(app.map.worldMap, x, y, r, color)
 
 def DrawSegment(app, segment):
-    r = imm.Config.Get("default line radius")
-    color = imm.Config.Get("spline curve interpolation point color")
+    r = fm.Config.Get("default line radius")
+    color = fm.Config.Get("spline curve interpolation point color")
     DrawPoint(app, segment.x1)
     DrawPoint(app, segment.x2)
     ScreenRenderer.HUD.RenderSegment(app.map.worldMap, segment.x1, segment.x2, r, color)
@@ -197,7 +197,7 @@ def SplineCurveIntersection():
     quality = 1 # 100%
     curve1 = Graph.B_SplineCurve(pointList1, quality, [], debugLevel)
     curve2 = Graph.B_SplineCurve(pointList2, quality, [], debugLevel)
-    offset =  imm.Config.Get("spline intersection offset")
+    offset =  fm.Config.Get("spline intersection offset")
     intersections = curve1.Intersection(curve2, offset)
     def update(app):
         for point in intersections:
@@ -221,7 +221,7 @@ def SplineCurveProjection():
     debugLevel = 1
     quality = 1 # 100%
     curve1 = Graph.B_SplineCurve([point1, point2, point3, point4, point5], quality, [], debugLevel)
-    offset = imm.Config.Get("spline projection offset")
+    offset = fm.Config.Get("spline projection offset")
     x0 = ArrayConverter(np.asarray([500, 500]))
     projection = curve1.Projection(x0, offset)
     def update(app):

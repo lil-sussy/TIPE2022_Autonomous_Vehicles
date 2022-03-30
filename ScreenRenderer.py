@@ -3,13 +3,13 @@ import numpy as np
 import ctypes
 import os
 ctypes.windll.user32.SetProcessDPIAware()
-import Packages.MapComponents.ImageManager as imm
+import Packages.RessourcesManagers.FileManager as fm
 
 # Les collisions entre voitures sont gérer par la class Sprite de pygame
 # Les collisions avec les bords de la route sont gérer par des détections de couleurs des coins de la voiture
 class WorldRenderer:
     def __init__ (self, screenW, screenH):
-        self.path = os.path.realpath(imm.Config.Get("ressource path") + imm.Config.Get("maps path"))
+        self.path = os.path.realpath(fm.Config.Get("ressource path") + fm.Config.Get("maps path"))
         self.screenW = screenW # La longueur de l'écran
         self.screenH = screenH # La largeur de l'écran
         self.fov_width = screenW # Longueur du "rectangle caméra", longueur de la carte découpé et représentée sur l'écran
@@ -17,7 +17,7 @@ class WorldRenderer:
 
     def LoadWorldFiles(self, mapName, jsonPath = ""):
         self.mapName = mapName # Le nom de la carte (inutile)
-        path = os.path.realpath(imm.Config.Get("ressource path") + imm.Config.Get("maps path") + self.mapName)
+        path = os.path.realpath(fm.Config.Get("ressource path") + fm.Config.Get("maps path") + self.mapName)
         self.mapPicture = pygame.image.load(path).convert() # Convert() améliore les performances
         self.worldMap = pygame.image.load(path).convert()
         self.empty_background = pygame.Surface((self.screenW, self.screenH)) # Nécéssaire pour copier un morceau de la carte dessus
@@ -32,8 +32,8 @@ class WorldRenderer:
     def MapPygameCommands(self, events = None):  # Commandes de déplacement de la caméra sur la carte
         # Pan-box moves up/down/left/right, Zooms with p and m
         keys = pygame.key.get_pressed()
-        speed =  imm.Config.Get("camera move speed") # Vitesse de la caméra (mouvement)
-        zoomSpeed = imm.Config.Get("camera zoom speed")
+        speed =  fm.Config.Get("camera move speed") # Vitesse de la caméra (mouvement)
+        zoomSpeed = fm.Config.Get("camera zoom speed")
         if ( keys[pygame.K_UP] ): # Déplacement de la caméra vers le haut
             y = self.cameraRect.y - speed
             self.cameraRect.y = max(0, y) # On ne doit pas dépasser y = 0
@@ -81,7 +81,7 @@ class WorldRenderer:
         pygame.transform.scale(self.camera, screenSize, self.empty_background) # On agrandit ou rétréssie zoomImage pour qu'il corresponde aux longeurs de l'écran, on rempli le reste avec du vide (emptyBackground)
         self.camera.blit(self.worldMap, (0, 0), self.cameraRect) # On dessine la partie découpé par le rectangle FOV (cameraRect) de la carte sur zoomImage
 
-import Packages.MapComponents.DriveMapGraph as graph
+import Packages.WorldComponents.DriveMapGraph as graph
 class HUD:
     def __init__(self, world, screen):
         self.worldMap = world
@@ -90,7 +90,7 @@ class HUD:
         self.screenH = screen.get_height()
         self.worldW = world.get_width()
         self.worldH = world.get_height()
-        self.defaultFont = imm.Config.Get("default font")  # Initialisation de la police d'écriture par défaut
+        self.defaultFont = fm.Config.Get("default font")  # Initialisation de la police d'écriture par défaut
         self.mapPoints = []  # Points déssinés sur la carte
         self.mapSegments = [] # Lignes déssinées sur la carte
         self.mapSprites = pygame.sprite.Group([]) # Initialisation des Sprites
@@ -120,13 +120,13 @@ class HUD:
         self.mapPoints.append((segment.x1, segment.x2, r, color))
 
     def DefaultPointOnMap(self, point):
-        r = imm.Config.Get("default point radius")
-        color = imm.Config.Get("spline curve interpolation point color")
+        r = fm.Config.Get("default point radius")
+        color = fm.Config.Get("spline curve interpolation point color")
         self.AddWorldPoint(point, r, color)
 
     def DefaultSegmentOnMap(self, segment):
-        r = imm.Config.Get("default line radius")
-        color = imm.Config.Get("spline curve interpolation point color")
+        r = fm.Config.Get("default line radius")
+        color = fm.Config.Get("spline curve interpolation point color")
         self.AddWorldSegment(self.worldMap, segment.x1, segment.x2, r, color)
         self.AddWorldPoint(segment.x1, r, color)
         self.AddWorldPoint(segment.x2, r, color)
@@ -163,7 +163,7 @@ class Application:
         self.customRender = customRender
         self.customUpdate = customUpdate
         self.customInitialisation = customInitialisation
-        self.pauseFont = imm.Config.Get("pause font")  # Police d'écriture du mot "pause" à l'écran
+        self.pauseFont = fm.Config.Get("pause font")  # Police d'écriture du mot "pause" à l'écran
 
     def Init(self, screenW, screenH, mapName):
         self.screenW = screenW
@@ -206,7 +206,7 @@ class Application:
 
     def Run(self):
         self.appRunning = True  # Booléen, application en cours d'éxécution
-        MAX = imm.Config.Get("delta time max millis")  # Temps maximum entre les update()
+        MAX = fm.Config.Get("delta time max millis")  # Temps maximum entre les update()
         while(self.appRunning):
             if self.paused:  # Pause
                 self.RenderPause()

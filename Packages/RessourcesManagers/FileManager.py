@@ -16,14 +16,14 @@ def AsUint16(array):
     array = np.asarray(array, dtype=np.uint16)
     return array.astype(np.uint16)
 
-def Show(array):
+def ShowImage(array):
     array = np.array(array) # Conversion tableau python à np ndarray
     array = array.astype(np.uint8) # Conversion 0 255 (8bit)
     im = Image.fromarray(array) # Image depuis le tableau
     im.show()
 
 import os
-def Open(filename):
+def OpenImage(filename):
     path = os.path.realpath(filename) # Absolute path
     im = Image.open(path) # Ouverture du fichier (aucune fermeture)
     array = np.array(im) # Conversion de l'image en np ndarray
