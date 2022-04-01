@@ -1,6 +1,6 @@
 import numpy as np
 import pygame
-import ScreenRenderer
+import Packages.App.Graphics.GraphicsEngine as GraphicsEngine
 import Packages.RessourcesManagers.FileManager as fm
 
 
@@ -41,41 +41,37 @@ class BezierCurve(pygame.sprite.Sprite):
             return BezierProcess(newPoints, t)  # La liste de point est diminuée de 1 à chaque réccursion
         return BezierProcess(self.points, t)
 
-    def update(self, map, screen, dt):
+    def update(self, map, dt):
         pygame.sprite.Sprite.update(self)
 
     def Render(self, world):  # Invoquée dans la class ScreenRenderer.MapRenderer
         level = self.debugLevel  # Niveau de débuggage
-        zoomRatio = world.cameraRect.width/world.worldMap.get_width()
+        zoomRatio = world.zoomRatio
         if level >= 1:  # Rendu de la courbe de Bézier
             CURVE_COLOR = fm.Config.Get("bezier curve color")
-            SIZE = fm.Config.Get("bezier curve radius")  
-            SIZE = int(SIZE *zoomRatio) # la taille dépend du zoom
+            SIZE = world.ScreenSizeToWorldSize(fm.Config.Get("bezier curve radius"))  
             point1 = self.curve[0]
-            for i in range(len(self.curve) -1):
+            for i in range(len(self.curve) -1):  # Rendu de  la courbe
                 point2 = self.curve[i+1]
-                ScreenRenderer.HUD.RenderSegment(world.worldMap, point1, point2, SIZE, CURVE_COLOR)   # On dessin le petit trait sur la carte
+                GraphicsEngine.HUD.RenderSegment(world.worldMap, point1, point2, SIZE, CURVE_COLOR)   # On dessin le petit trait sur la carte
                 point1 = point2
-        RADIUS = fm.Config.Get("bezier point radius")
-        RADIUS = int(RADIUS *zoomRatio)
+        RADIUS = world.ScreenSizeToWorldSize(fm.Config.Get("bezier point radius"))
         if level >= 2:  # Rendu du/des points spéciales
             SPECIAL_POINT_COLOR = fm.Config.Get("bezier special point color")
-            for t in self.parameters:
+            for t in self.parameters:  # Rendu des points spéciaux
                 x, y = self.Interpolate(t)   # Coordonées du point spécial
-                ScreenRenderer.HUD.RenderPoint(world.worldMap, x, y, RADIUS, SPECIAL_POINT_COLOR)
+                GraphicsEngine.HUD.RenderPoint(world.worldMap, [x, y], RADIUS, SPECIAL_POINT_COLOR)
         if level >= 3:
             POINT_COLOR = fm.Config.Get("bezier point color")
-            for point in self.points:
-                x, y = point   # Coordonées du point définissant la courbe de Bézier
-                ScreenRenderer.HUD.RenderPoint(world.worldMap, x, y, RADIUS, POINT_COLOR)
+            for point in self.points:  # Rendu des points de contrôles
+                GraphicsEngine.HUD.RenderPoint(world.worldMap, point, RADIUS, POINT_COLOR)
         if level >= 4:
             LINE_COLOR = fm.Config.Get("bezier point color")
-            SIZE = fm.Config.Get("bezier curve radius")/3
-            SIZE = int(SIZE *zoomRatio) # la taille dépend du zoom
+            SIZE = world.ScreenSizeToWorldSize(fm.Config.Get("bezier curve radius"))
+            SIZE = SIZE//2
             lastPoint = self.points[0]
-            for point in self.points:
-                x, y = point   # Coordonées du point définissant la courbe de Bézier
-                ScreenRenderer.HUD.RenderSegment(world.worldMap, lastPoint, point, SIZE, LINE_COLOR)
+            for point in self.points:  # Rendu du polygone de contrôle de la courbe
+                GraphicsEngine.HUD.RenderSegment(world.worldMap, lastPoint, point, SIZE, LINE_COLOR)
                 lastPoint = point
 
 
@@ -95,8 +91,8 @@ Coktail of 2 techniques, the fastest one, but the most complicated one : https:/
 One technique, efficient with high amount of beziers curve in one spline curve and simple : https://pomax.github.io/bezierinfo/#intersections
 """
 class B_SplineCurve(pygame.sprite.Sprite):
-    def __init__(self, points, quality, parameters, debugLevel):
-        pygame.sprite.Sprite.__init__(self)  # Initialisation pygame
+    def __init__(self, points, quality, parameters, chunkGridSize, debugLevel):
+        pygame.sprite.Sprite.__init__(self)  # Création d'un sprite pygame
         # cPoints = points de contrôle de la courbe B Spline (polygone de control)
         # bPoints = points de contrôles des courbes de Béziers
         # sPoints = points sources (points d'interpolation) de la courbe B Spline
@@ -106,6 +102,8 @@ class B_SplineCurve(pygame.sprite.Sprite):
         self.quality = quality
         self.debugLevel = debugLevel
         self.parameters = parameters
+        self.chunkGridSize = chunkGridSize  # Le nombre de chunk (surface carré) qui divise le monde en longeur
+        self.chunksCrossed = []  # Liste de chunkID (cf DriveMapGraph class) des chunks traversés par la courbe
         self.bPoints, self.cPoints, self.bezierCurves, self.bezierNumber, self.length = self.GeneratesBezierControlPoints()
 
     def Interpolate(self, t):
@@ -113,38 +111,44 @@ class B_SplineCurve(pygame.sprite.Sprite):
         deci = t - k  # Décimales
         return self.bezierCurves[k].Interpolate(deci)
 
-    def update(self, map, screen, dt):  # Overrided
+    def update(self, map, dt):  # Overrided
         pygame.sprite.Sprite.update(self)
         for bezierCurve in self.bezierCurves:
-            bezierCurve.update(map, screen, dt)
+            bezierCurve.update(map, dt)
 
     def Render(self, world):  # Invoquée dans la class ScreenRenderer.MapRenderer
         for bezierCurve in self.bezierCurves:
             bezierCurve.Render(world)
-        zoomRatio = world.cameraRect.width/world.worldMap.get_width()
-        RADIUS = fm.Config.Get("bezier point radius")
-        RADIUS = int(RADIUS *zoomRatio)
-        LINE_RADIUS = fm.Config.Get("spline curve line radius")
-        LINE_RADIUS = int(LINE_RADIUS *zoomRatio)
+        RADIUS = world.ScreenSizeToWorldSize(fm.Config.Get("bezier point radius"))
+        LINE_RADIUS = world.ScreenSizeToWorldSize(fm.Config.Get("spline curve line radius"))
         S_POINT_COLOR = fm.Config.Get("spline curve interpolation point color")
         B_POINT_COLOR = fm.Config.Get("spline curve bezier point color")
         if self.debugLevel >= 2:  # Rendu des points d'interpolations des courbes de Béziers
             for point in self.sPoints:
                 x, y = point   # Coordonées du point définissant la courbe de Bézier
-                ScreenRenderer.HUD.RenderPoint(world.worldMap, x, y, RADIUS, S_POINT_COLOR)
+                GraphicsEngine.HUD.RenderPoint(world.worldMap, point, RADIUS, S_POINT_COLOR)
         if self.debugLevel >= 3:
             for point in self.cPoints:  # Rendu des points de contrôle de la courbe de Spline
                 x, y = point
-                ScreenRenderer.HUD.RenderPoint(world.worldMap, x, y, RADIUS, B_POINT_COLOR)
+                GraphicsEngine.HUD.RenderPoint(world.worldMap, point, RADIUS, B_POINT_COLOR)
         if self.debugLevel >= 4:
             prevC = self.cPoints[0]
             for i in range(len(self.cPoints)): # Rendu du polygone de control de la courbe B Spline
                 Ci = self.cPoints[i]
-                ScreenRenderer.HUD.RenderSegment(world.worldMap, prevC, Ci, LINE_RADIUS, B_POINT_COLOR)
+                GraphicsEngine.HUD.RenderSegment(world.worldMap, prevC, Ci, LINE_RADIUS, B_POINT_COLOR)
                 prevC = Ci
 
     def GeneratesBezierControlPoints(self):  # Génère les points de controls de la courbe de Bézier passant par les n points de {points} appélés point d'interpolations S0 :: Sn
+        def appendOnlyOnce(list, n):  # Ajoute n à la liste uniquement si n n'y est pas déjà
+            for k in list:
+                if k == n:
+                    return list
+            return list.append(n)
         def InverseOfM141(N):  # Retourne l'inverse de la matrice141 de taille N = n-2
+            if N == 0:
+                return []
+            if N == 1:
+                return [[1/4]]
             matrix141 = [[4, 1] + (N-2)*[0]]  # Matrice141 = Diag((1 4 1)), première ligne : 4 1 0 ... 0
             for i in range(1, N-1):  # création des lignes intérieures de la matrice
                 line = (i-1)*[0] + [1, 4, 1] + (N-i-2)*[0]  # Ligne de taille n 0 ... 0 1 4 1 0 ... 0
@@ -163,6 +167,10 @@ class B_SplineCurve(pygame.sprite.Sprite):
             extraSPoints.append(Cn)  # De taille N-2
             return extraSPoints
         def MatrixMultiply(m1, m2):
+            if len(m1) == 0:
+                return m2
+            if len(m2) == 0:
+                return m1
             return [
                         [
                             sum([
@@ -206,7 +214,10 @@ class B_SplineCurve(pygame.sprite.Sprite):
         n = len(sPoints)  # n points
         invM141 = InverseOfM141(n-2)  # Seulement les n-2 points du milieux iront dans cette matrice -> on a besoin d'une matrtice de taille n-2
         extraSourcePoints = EvaluateExtraSourcePoints(sPoints)  # Etape 1 du processus
-        cPoints = MatrixMultiply(invM141, extraSourcePoints)  # On calcluls les points A1 :: An-1. Etape 2 du processus
+        if n >= 3:  # Sinon la matrice M141 est vide
+            cPoints = MatrixMultiply(invM141, extraSourcePoints)  # On calcluls les points A1 :: An-1. Etape 2 du processus
+        else:
+            cPoints = []
         cPoints.insert(0, sPoints[0])  # A0 = S0
         cPoints.append(sPoints[n-1])  # An = Sn
         bPoints, bezierCurves, length = FindBezierControlPoints(cPoints, sPoints)  # On calcul les points de controle de la courbe de Bézier. Etape 3 du processus
@@ -350,7 +361,8 @@ class B_SplineCurve(pygame.sprite.Sprite):
             return PolygonsIntersection(self.cPoints, bspline2.cPoints)
 
 """_summary_
-https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
+This class handles the segments stuff in a flat euclidian plane. Intersection, transformation, distances, projection, interpolation, ect...
+This class stands as a tool for the above classes, it turned out to be oftenly used.
 """
 class Segment:
     def __init__(self, x1, x2):  # Créer le segment [x1, x2]

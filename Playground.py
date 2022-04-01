@@ -1,7 +1,7 @@
-import ScreenRenderer
-import Packages.VehiculesComponents.VehicleCylindrique
+import Packages.RessourcesManagers.FileManager as fm
+import Packages.App.Graphics.GraphicsEngine as ge
 import pygame
-from NeatVisualizer import *
+from Packages.WorldComponents.NeatVisualizer import *
 
 """
 Liens qui m'ont été utiles :
@@ -13,12 +13,12 @@ https://stackoverflow.com/questions/63795236/best-way-to-create-image-viewer-and
 """
 
 #Fonction vide
-def FonctionVide():
+def EmptyFunction(app):
     return
 
 #Fonctions d'initialisations.
-Initialisation = FonctionVide
-Update = FonctionVide
+Initialisation = EmptyFunction
+Update = EmptyFunction
 
 #Initialisation de l'expérience 3
 masse = 1000#kg
@@ -31,8 +31,8 @@ lbda = 0; dlambda = 0.02
 lastlbda = 0; lastFM = 0; lastCF = 0
 
 import Packages.RessourcesManagers.FileManager as fm
-import Packages.VehiculesComponents.VehicleCylindrique as vh
-def Experience3():
+import Packages.WorldComponents.VehicleCylindrique as vh
+def Experiment3():
     def InitSimulation(app):
         return
     def UpdateApp(app):
@@ -54,7 +54,7 @@ def Experience3():
     Update = UpdateApp # Appelé à chaque update de pygame
     Initialisation = InitSimulation # Appelé lors de l'initialisation
     MapName = "ParisTopView/CircuitUn.png"
-    App = ScreenRenderer.NeatApplication(1920, 1080)
+    App = ge.NeatApplication(1920, 1080)
     class Color:
         def __init__(self, r, g, b):
             self.r = r
@@ -68,12 +68,10 @@ def Experience3():
 #VehiculeCylindriqueMapBlanche2()
 
 
-import Packages.RessourcesManagers.FileManager as fm
 
 import numpy as np
 
 import pygame
-import Packages.RessourcesManagers.FileManager as fm
 
 # path = "C:\\Users\\nayke\\OneDrive\\devlab\\TIPE 2022\\AVehiclesMap\\Ressources\\Maps\\ParisTopView\\CurvesTest1\\"
 # curve1BP = np.asarray(Image.open(path + "Highways\\Curve1.png"))
@@ -87,8 +85,6 @@ def GenerateCurve(bppath):
     progression.Done()
     return curve
 
-import ScreenRenderer
-import Packages.WorldComponents.Cython.EuclidianCurves as Curves
 def GenerateMap(pathCurve1):
     progression = fm.ProgressBar("Génération de la carte...") # Bar de progression
     curve1 = GenerateCurve(pathCurve1)
@@ -124,7 +120,7 @@ def BezierCurvef():
     point = curve1.Interpolate(0.7)
     curve2 = Graph.BezierCurve([point1, point3, point4, point2, point], quality, [], debugLevel)
     MapName = "ParisTopView/CircuitUn.png"
-    app = ScreenRenderer.NeatApplication(1920, 1080)
+    app = ge.NeatApplication(1920, 1080)
     app.InitPygame(MapName)
     app.map.Sprites.add(curve1)
     app.map.Sprites.add(curve2)
@@ -145,7 +141,7 @@ def SplineCurvef():
     quality = 1 # 100%
     curve1 = Graph.B_SplineCurve([point1, point2, point3, point4, point5], quality, [], debugLevel)
     MapName = "TestsEnvironement/whitemap.png"
-    app = ScreenRenderer.NeatApplication(1920, 1080)
+    app = ge.NeatApplication(1920, 1080)
     app.InitPygame(MapName)
     app.map.Sprites.add(curve1)
     app.RunPygame(initialisation, update)
@@ -160,14 +156,14 @@ def DrawPoint(app, point):
     x, y = point[0], point[1]
     r = fm.Config.Get("default point radius")
     color = fm.Config.Get("spline curve interpolation point color")
-    ScreenRenderer.HUD.RenderPoint(app.map.worldMap, x, y, r, color)
+    ge.HUD.RenderPoint(app.map.worldMap, x, y, r, color)
 
 def DrawSegment(app, segment):
     r = fm.Config.Get("default line radius")
     color = fm.Config.Get("spline curve interpolation point color")
     DrawPoint(app, segment.x1)
     DrawPoint(app, segment.x2)
-    ScreenRenderer.HUD.RenderSegment(app.map.worldMap, segment.x1, segment.x2, r, color)
+    ge.HUD.RenderSegment(app.map.worldMap, segment.x1, segment.x2, r, color)
 
 def DrawPolygon(app, polygon):
     prevP = polygon[0]
@@ -176,15 +172,20 @@ def DrawPolygon(app, polygon):
         DrawSegment(app, Graph.Segment(polygon[i], prevP))
         prevP = polygon[i]
 
-def OnGrid(point, division, center):
-    point = np.asarray(point)
-    point = point*division + np.asarray(center)*division
+def OnGrid(point, original_dimensions, new_dimensions, custom_ratio = 1):
+    original_w, original_h = original_dimensions  # Dimensions de l'image de départ (la grille)
+    original_center = [original_w//2, original_h//2]  # Centre de la grille
+    new_w, new_h = new_dimensions  # Dimensions de l'image d'arrivé
+    new_center = [new_w//2, new_h//2]  # Centre de la nouvelle image
+    ratio = new_w/original_w*custom_ratio  # Ratio de taille
+    point = np.asarray(point) - np.asarray(original_center)  # On centre le point
+    point = point*ratio + np.asarray(new_center)  # Transformation linéaire dans le nouveau monde
     return point.tolist()
 
-def OnGrids(points, division, center):
+def OnGrids(points, original_dimensions, new_dimensions, custom_ratio = 1):
     newPoints = []
     for point in points:
-        newPoints.append(OnGrid(point, division, center))
+        newPoints.append(OnGrid(point, original_dimensions, new_dimensions, custom_ratio))
     return newPoints
 
 def SplineCurveIntersection():
@@ -203,7 +204,7 @@ def SplineCurveIntersection():
         for point in intersections:
             DrawPoint(app, point)
     MapName = "TestsEnvironement/whitemap.png"
-    app = ScreenRenderer.NeatApplication(1920, 1080)
+    app = ge.NeatApplication(1920, 1080)
     app.InitPygame(MapName)
     app.map.Sprites.add(curve1)
     app.map.Sprites.add(curve2)
@@ -228,7 +229,7 @@ def SplineCurveProjection():
         DrawPoint(app, projection)
         DrawPoint(app, x0)
     MapName = "TestsEnvironement/whitemap.png"
-    app = ScreenRenderer.NeatApplication(1920, 1080)
+    app = ge.NeatApplication(1920, 1080)
     app.InitPygame(MapName)
     app.map.Sprites.add(curve1)
     app.RunPygame(initialisation, update)
@@ -258,16 +259,10 @@ def CurveWrapperTheorem():
         DrawPolygon(app, polygons[len(polygons) -1])
         return
     MapName = "TestsEnvironement/whitemap.png"
-    app = ScreenRenderer.NeatApplication(1920, 1080)
+    app = ge.NeatApplication(1920, 1080)
     app.InitPygame(MapName)
     app.map.Sprites.add(curve1)
     app.RunPygame(initialisation, update)
-
-SplineCurveIntersection()
-pathCurve1 = "Ressources/Maps/ParisTopView/CurvesTest1/Highways/curve1.png"
-
-# GenerateGraph(pathCurve1)
-# GenerateMap(pathCurve1)
 
 """_references_
 
@@ -287,3 +282,155 @@ Curve - Curve Intersection source code : https://pomax.github.io/bezierinfo/chap
 
 Bezier curve length :https://pomax.github.io/bezierinfo/#arclength
 """
+
+import Packages.WorldComponents.WorldRoads as crv
+import Packages.WorldComponents.DriveMapGraph as gr
+import Packages.App.Application as ap
+import Packages.App.Graphics.GraphicsEngine as ge
+
+
+class IntersectionGrid:
+    def __init__(self, grid_size, grid_origin, world):
+        def AddAvalailbleIntersection(point):
+            self.available_points.append(point)
+        self.grid_size = grid_size
+        self.grid_origin = grid_origin
+        self.world_width = world.worldMap.get_width()
+        self.world_height = world.worldMap.get_height()
+        self.available_points = []  # Points disponibles
+        self.used_points = []  # Points déjà utilisés (réutilisables)
+        self.intersections = []
+        self.roads = []
+        self.choosed_points = []
+        grid_lenght = self.world_width//grid_size
+        for i in range(grid_size):
+            x = grid_lenght *i
+            y = grid_lenght *i
+            point = [x, y]
+            if world.IsInBounds(point):
+                AddAvalailbleIntersection(point)
+        self.available_color = fm.Config.Get("grid available point color")
+        self.used_color = fm.Config.Get("grid used point color")
+        self.intersection_color = fm.Config.Get("grid intersection color")
+        self.point_size = fm.Config.Get("grid point size")
+
+    def ChoosePoint(self, point):
+        self.choosed_points.append(point)
+
+    def CreateRoadFromChoosedPoints(self):
+        road = crv.B_SplineCurve(self.choosed_points, 1, [], self.grid_size)
+        intersections = self.choosed_points[0], self.choosed_points[len(self.choosed_points) -1]
+        self.roads.append((intersections, road))
+        self.choosed_points = []
+
+    def ProcessEvents(self):
+        def InBounds(point, size, pos):
+            x, y = pos[0], pos[1]
+            xcondition = (x >= point[0] - size) and (x <= point[0] + size)
+            ycondition = (y >= point[1] - size) and (y <= point[1] + size)
+            return xcondition and ycondition
+        def ProcessAddPoint():
+            pos = self.world.MousePosition()
+            for point in self.available_points:
+                if InBounds(point, self.point_size, pos):
+                    self.ChoosePoint(point)
+            for point in self.used_points:
+                if InBounds(point, self.point_size, pos):
+                    intersection = point
+                    for begin, end, road in self.roads:
+                        for i, sourcePoint in enumerate(road.sPoints):
+                            if sourcePoint == intersection:  # Croisement de routes
+                                sPoints = road.sPoints
+                                road2 = crv.B_SplineCurve(sPoints[:i], road.quality, [], self.grid_size)
+                                self.roads.append((begin, intersection, road2))
+                                road3 = crv.B_SplineCurve(sPoints[:i], road.quality, [], self.grid_size)
+                                self.roads.append((intersection, end, road3))
+                                break
+                    self.ChoosePoint(point)
+                    self.CreateRoadFromChoosedPoints()
+            for point in self.intersections:
+                if InBounds(point, self.point_size, pos):
+                    self.ChoosePoint(point)
+        mouse = pygame.mouse
+        if mouse.get_pressed()[0]:
+            ProcessAddPoint()
+    
+    def Update(self, dt):
+        for road in self.roads:
+            road.Update(dt)
+        return
+
+    def Render(self):
+        for point in self.available_points:
+            ge.HUD.RenderPoint(self.world.worldMap, point, self.point_size, self.available_color)
+        for point in self.used_points:
+            ge.HUD.RenderPoint(self.world.worldMap, point, self.point_size, self.used_color)
+        for intersection in self.intersections:
+            ge.HUD.RenderPoint(self.world.worldMap, intersection, self.point_size, self.intersection_color)
+        for road in self.roads:
+            road.Render(self.world.worldMap)
+
+
+def GenerateGraph():
+    mapName = "/TestsEnvironement/large_map.png"
+    chunk_number = 32
+    def Init(app):
+        dim_world = (app.world.width, app.world.height)
+        dim_blueprint = 386*2, 201*2
+        ratio = 1
+        nodes = [[62, 27], [62, 94], [6, 94], [62, 168], [244, 192], [244, 6], [378, 94]]
+        nodes = OnGrids(nodes, dim_blueprint, dim_world, ratio)
+        w, h = dim_world
+        app.graph = gr.Graph(chunk_number, w, h, nodes, [])
+        # Les 2 routes courbées, les voies d'intersections
+        sPoints = [[244, 6], [264, 50], [300, 74], [351, 80]]
+        app.graph.AddArc(5, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[244, 192], [264, 144], [300, 116], [351, 110]]
+        app.graph.AddArc(4, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        # Les 3 première venant du haut
+        sPoints = [[48, 38], [48, 72]]
+        app.graph.AddArc(0, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[62, 38], [62, 72]]
+        app.graph.AddArc(0, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[74, 38], [74, 72]]
+        app.graph.AddArc(0, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        # Les 3 routes venants du bas
+        sPoints = [[48, 118], [48, 157]]
+        app.graph.AddArc(3, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[62, 118], [62, 157]]
+        app.graph.AddArc(3, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[74, 118], [74, 157]]
+        app.graph.AddArc(3, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        # Les 4 routes de gauches
+        sPoints = [[6, 80], [38, 80]]
+        app.graph.AddArc(2, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[6, 90], [38, 90]]
+        app.graph.AddArc(2, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[6, 100], [38, 100]]
+        app.graph.AddArc(2, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[6, 110], [38, 110]]
+        app.graph.AddArc(2, 1, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        # Les 4 routes de droites
+        sPoints = [[87, 80], [351, 80]]
+        app.graph.AddArc(1, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[87, 90], [351, 90]]
+        app.graph.AddArc(1, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[87, 100], [351, 100]]
+        app.graph.AddArc(1, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[87, 110], [351, 110]]
+        app.graph.AddArc(1, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        # Les 4 routes de droites droites
+        sPoints = [[351, 80], [401, 80]]
+        app.graph.AddArc(1, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[351, 90], [401, 90]]
+        app.graph.AddArc(1, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[351, 100], [401, 100]]
+        app.graph.AddArc(1, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+        sPoints = [[351, 110], [401, 110]]
+        app.graph.AddArc(1, 6, OnGrids(sPoints, dim_blueprint, dim_world, ratio))
+    def Render(app):
+        app.graph.Render(app.world)
+    def Update(app, dt):
+        app.graph.update(app.world, dt)
+    app = ap.SimpleApplication(mapName, EmptyFunction, Render, Update, Init)
+    app.Run()

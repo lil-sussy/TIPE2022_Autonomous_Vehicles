@@ -7,11 +7,11 @@
         // Applications (pygame)
         "delta time max millis": 500,  // Temps maximum entre 2 update() (en millisecondes). 2 FPS min
         "pause font": ["consolas", 32, "black"],  // Police du texte de pause
-        "default font": ["arial", 20, "black"],  // Police d'écriture par défaut
+        "default font": ["arial", 26, "black"],  // Police d'écriture par défaut
         
         // ScreenRenderer
-        "camera move speed": 20, // Vitesse de la caméra
-        "camera zoom speed": 0.05, // 5%
+        "camera move speed": 0.10, // 10% de la largeur de l'écran par secondes, Vitesse de la caméra
+        "camera zoom speed": 0.05, // 5% de la largeur par secondes, vitesse de zoom
         "default point radius": 5, // Rayon des points par défaut
         "default line radius": 2, // Epaisseur des lignes par défaut
         
@@ -22,7 +22,7 @@
         
         // Bezier Curves
         "bezier curve quality": 100, // Nombre de points maximum pour tracer une courbe de Bézier
-        "bezier point radius": 13, // Rayon de rendu des points de la courbe de Bézier
+        "bezier point radius": 15, // Rayon de rendu des points de la courbe de Bézier
         "bezier curve radius": 8, // Rayon de rendu des points de la courbe de Bézier
         "bezier point color": [125, 96, 223],
         "bezier curve color": [223, 141, 222],
@@ -37,6 +37,7 @@
         
         // Graph
         "graph node color": [79, 234, 166],
-        "graph node radius": 20,
-        "graph arc color": [79, 234, 229]
+        "graph node radius": 18,
+        "graph arc color": [79, 234, 229] ,
+        "world grid size": 80  // 80 pixels
     }
