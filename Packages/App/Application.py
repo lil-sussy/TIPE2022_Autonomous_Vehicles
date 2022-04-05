@@ -6,6 +6,7 @@ import Packages.RessourcesManagers.FileManager as fm
 def emptyFunction(app):  # Fonction vide, valeur par défaut
     return
 
+from threading import Thread
 class Application:
     def __init__(self, customInputs = emptyFunction, customRender = emptyFunction, customUpdate = emptyFunction, customInitialisation = emptyFunction):
         self.customInputs = customInputs
@@ -31,16 +32,17 @@ class Application:
 
     def ProcessNewEvents(self, dt):
         events = pygame.event.get()  # Evenement d'inputs
+        keys = pygame.key.get_pressed()
         # Exit On Quit Event
         for event in events:
             if event.type == pygame.QUIT:  # arret de l'application
-                self.exit = False
+                self.exit = True
             if event.type == pygame.KEYDOWN:  # Pause de l'application
                 if event.key == pygame.K_SPACE:
                     self.paused = not self.paused
-        self.world.MapPygameCommands(events, dt)
-        self.keyboard.Perform(events)
-        self.customInputs(events)
+        self.world.MapPygameCommands(keys, dt)
+        self.keyboard.Perform(keys)
+        self.customInputs(keys)
 
     def UpdateAll(self, dt):
         self.ProcessNewEvents(dt)
@@ -50,31 +52,41 @@ class Application:
         self.customUpdate(self, dt)  # Traitements supplémentaires optionnels
 
     def RenderAll(self):
-        self.world.RenderMapOnScreen(self.screen) # Rendu de la carte sur l'écran
+        pygame.display.flip()  # On rend tout sur l'écran
+        self.world.ClearMap()  # On nettoie la carte des anciens éléments
         self.hud.RenderWorldHud()  # Rendu de "l'interface de la carte"
-        self.hud.RenderScreenHud()  # Rendu de l'interface écran
         self.worldHud.Render()  # Rendu des items clickables sur la carte
+        self.customRender(self)  # rendus supplémentaires optionnels
         if self.console.enabled:
             self.console.Render()  # Rendu de la console à l'écran
-        self.customRender(self)  # rendus supplémentaires optionnels
-        pygame.display.flip()  # On rend tout sur l'écran
+        self.hud.RenderScreenHud()  # Rendu de l'interface écran
+        self.world.RenderMapOnScreen(self.screen) # Rendu de la carte sur l'écran
 
     def RenderPause(self):
         self.hud.renderText(self.screen, self.hud.center, "Pause", self.pauseFont)  # Rendu du mot "Pause" au centre de l'écran
 
     def Run(self):
-        self.exit = True  # Booléen, application en cours d'éxécution
+        self.exit = False  # Booléen, application en cours d'éxécution
         MAX = fm.Config.Get("delta time max millis")  # Temps maximum entre les update()
-        while(self.exit):
-            if self.paused:  # Pause
-                self.RenderPause()
-            else:
-                dt = self.clock.get_time()
-                if(dt >= MAX): #Lower than 1/DELTA_TIME_MAX fps
-                    dt = MAX
-                self.UpdateAll(dt)
-                self.RenderAll()
-                self.clock.tick(60) # On garde le control du temps, 60 fps maximum
+        def RenderApp():
+            while(not self.exit):
+                if self.paused:  # Pause
+                    self.RenderPause()
+                else:
+                    self.RenderAll()
+        def UpdateApp():
+            while(not self.exit):
+                if self.paused:  # Pause
+                    self.paused = self.paused
+                else:
+                    dt = self.clock.get_time()
+                    if(dt >= MAX): #Lower than 1/DELTA_TIME_MAX fps
+                        dt = MAX
+                    self.UpdateAll(dt)
+                    self.clock.tick(60) # On garde le control du temps, 60 fps maximum
+        self.renderThread = Thread(target=RenderApp)
+        self.renderThread.start()
+        UpdateApp()
 
 
 class SimpleApplication(Application):
@@ -85,7 +97,6 @@ class SimpleApplication(Application):
     def Run(self):
         Application.Run(self)
 
-import Packages.WorldComponents.VehicleCylindrique as vh
 import neat
 class NeatAplication(Application):
     def __init__(self):
@@ -161,7 +172,6 @@ class Keyboard:
     def __init__(self, app):
         self.app = app
 
-    def Perform(self, events):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LCTRL] and keys[pygame.pygame.K_p]:  # Ctrl + p, on cache la console
+    def Perform(self, keys):
+        if keys[pygame.K_LCTRL] and keys[pygame.K_p]:  # Ctrl + p, on cache la console
             self.app.console.enabled = True

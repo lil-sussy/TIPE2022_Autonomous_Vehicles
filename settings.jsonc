@@ -1,8 +1,14 @@
     {
         // Les Paths
         "ressource path": "./Ressources/",
+        "vehicle sprite path": "./Ressources/Car/car.png",
         "maps path": "Maps/",
         "neat path": "neat/",
+
+        // Le véhicule
+        "static friction coefficient": 0.7,//http://hyperphysics.phy-astr.gsu.edu/hbase/Mechanics/frictire.html#:~:text=Jones%20and%20Childers%20report%20coefficients,racing%20tires%20with%20no%20tread.
+        "dynamic friction coefficient": 0.7,//http://hyperphysics.phy-astr.gsu.edu/hbase/Mechanics/frictire.html#:~:text=Jones%20and%20Childers%20report%20coefficients,racing%20tires%20with%20no%20tread.
+        "wheel angle offset": 0.1, // 0.1 degré
 
         // Applications (pygame)
         "delta time max millis": 500,  // Temps maximum entre 2 update() (en millisecondes). 2 FPS min

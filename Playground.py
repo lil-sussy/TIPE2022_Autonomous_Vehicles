@@ -31,7 +31,6 @@ lbda = 0; dlambda = 0.02
 lastlbda = 0; lastFM = 0; lastCF = 0
 
 import Packages.RessourcesManagers.FileManager as fm
-import Packages.WorldComponents.VehicleCylindrique as vh
 def Experiment3():
     def InitSimulation(app):
         return
@@ -433,4 +432,46 @@ def GenerateGraph():
     def Update(app, dt):
         app.graph.update(app.world, dt)
     app = ap.SimpleApplication(mapName, EmptyFunction, Render, Update, Init)
+    app.Run()
+
+import Packages.WorldComponents.RoadVehicle as vh
+def NewVehicleTest():
+    mapname = "/rplace/rplace.png"
+    global id
+    id = 0
+    denginecouple = 1000  # N.m
+    dwheelangle = 1  # Degré
+    def CreateVehicle(center):
+        mass = 1000  # 1000 kg
+        wheelbase = 2.61*10  # m, l'empattement du véhicule (distances entre les roues avant et arrière)
+        wheelradius = 43*10**-2  # Le rayon des roues (pneus + jentes)
+        width = wheelbase/2  # La largeur du véhicule
+        debuglevel = 4  # Max
+        return vh.Vehicle(center, mass, wheelbase, width, wheelradius, debuglevel)
+    def Init(app):
+        center = app.world.center
+        app.vehicle = CreateVehicle(center)
+    def PerformInputs(events):
+        keys = pygame.key.get_pressed()
+        enginecouple = app.vehicle.enginecouple
+        wheelangle = app.vehicle.wheelangle
+        if keys[pygame.K_r]:
+            app.vehicle = CreateVehicle(app.world.center)
+        if keys[pygame.K_z]:
+            enginecouple += denginecouple
+            app.vehicle.ChangeOrders(wheelangle, enginecouple)
+        if keys[pygame.K_s]:
+            enginecouple += - denginecouple
+            app.vehicle.ChangeOrders(wheelangle, enginecouple)
+        if keys[pygame.K_q]:
+            wheelangle += dwheelangle
+            app.vehicle.ChangeOrders(wheelangle, enginecouple)
+        if keys[pygame.K_d]:
+            wheelangle += - dwheelangle
+            app.vehicle.ChangeOrders(wheelangle, enginecouple)
+    def Update(app, dt):
+        app.vehicle.Update(app, dt)
+    def Render(app):
+        app.vehicle.Render(app.world)
+    app = ap.SimpleApplication(mapname, PerformInputs, Render, Update, Init)
     app.Run()

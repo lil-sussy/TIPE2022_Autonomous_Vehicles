@@ -22,6 +22,7 @@ class WorldRenderer:
             self.worldMap = pygame.image.load(path).convert()
             self.width = self.worldMap.get_width() # Longueur de la carte
             self.height = self.worldMap.get_height() # Largeur de la carte
+            self.center = [self.width//2, self.height//2] # Centre de la carte
             self.fov_width = self.width # Longueur du "rectangle caméra", longueur de la carte découpé et représentée sur l'écran
             self.fov_height = self.height # Largeur de la découpe de la carte.
             self.empty_background = pygame.Surface((self.screenW, self.screenH)) # Nécéssaire pour copier un morceau de la carte dessus
@@ -32,44 +33,41 @@ class WorldRenderer:
         self.previous_cameraRect = pygame.Rect(0, 0, 1, 1) # Pour détecter si le zoom a changé
         self.camera = None # Initialisation
 
-    def MapPygameCommands(self, events, dt):  # Commandes de déplacement de la caméra sur la carte
+    def MapPygameCommands(self, keys, dt):  # Commandes de déplacement de la caméra sur la carte
         # Pan-box moves up/down/left/right, Zooms with p and m
-        keys = pygame.key.get_pressed()
         SPEED =  fm.Config.Get("camera move speed") # Vitesse de la caméra (mouvement) en pourcentage de la longeur de l'écran par secondes
         SPEED = self.cameraRect.width*SPEED*(dt/1000)  # dt est en milisecondes
         SPEED = int(SPEED/self.zoomRatio)
         ZOOM_SPEED = fm.Config.Get("camera zoom speed")
+        cameraX = self.cameraRect.x
+        cameraY = self.cameraRect.y
+        cameraW = self.cameraRect.w
+        cameraH = self.cameraRect.h
         if ( keys[pygame.K_UP] ): # Déplacement de la caméra vers le haut
-            y = self.cameraRect.y - SPEED
-            self.cameraRect.y = max(0, y) # On ne doit pas dépasser y = 0
-        
+            cameraY = max(0, cameraY - SPEED) # On ne doit pas dépasser y = 0
         if ( keys[pygame.K_DOWN] ): # Déplacement de la caméra verrs le bas
-            y = self.cameraRect.y + SPEED
             bottomBorder = self.worldMap.get_height() - self.cameraRect.height - 1
-            self.cameraRect.y = min(bottomBorder, y) # Le bas du rectangle FOV (rectangle camera) ne doit pas dépasser l'écran
-        
+            cameraY = min(bottomBorder, cameraY + SPEED) # Le bas du rectangle FOV (rectangle camera) ne doit pas dépasser l'écran
         if ( keys[pygame.K_LEFT] ): # Déplacement de la caméra vers la gauche
-            x = self.cameraRect.x - SPEED
-            self.cameraRect.x = max(0, x) # On ne doit pas dépasser x = 0
-        
+            cameraX = max(0, cameraX - SPEED) # On ne doit pas dépasser x = 0
         if ( keys[pygame.K_RIGHT] ): # Déplacement de la caméra vers la droite
-            x = self.cameraRect.x + SPEED
             rightBorder = self.worldMap.get_width() - self.cameraRect.width - 1
-            self.cameraRect.x = min(rightBorder, x) # Le bord droit du rectangle FOV (rectangle camera) ne doit pas dépasser l'écran
-        
+            cameraX = min(rightBorder, cameraX + SPEED) # Le bord droit du rectangle FOV (rectangle camera) ne doit pas dépasser l'écran
         if ( keys[pygame.K_p]): # Zoom de la caméra sur la carte
-            w = self.cameraRect.width *(1 - ZOOM_SPEED)  # Zoom => Augmentation des dimensions du point de vue
-            h = self.cameraRect.height *(1 - ZOOM_SPEED)
-            self.cameraRect.width = min(w, self.width) # On ne zoom pas plus que : pixel(carte) = pixel(écran)
-            self.cameraRect.height = min(h, self.height)
-        
+            diffW = cameraW - max(cameraW *(1 - ZOOM_SPEED), self.screenW//2)  # On ne zoom pas plus que : pixel(carte) = 2pixel(écran)
+            diffH = cameraH - max(cameraH *(1 - ZOOM_SPEED), self.screenH//2)  # Zoom => Augmentation des dimensions du point de vue
+            cameraW = cameraW - diffW
+            cameraH = cameraH - diffH
+            cameraX += diffW/2  # Recentrage
+            cameraY += diffH/2
         if ( keys[pygame.K_m]): # Dé-zoom de la caméra sur la carte
-            w = int(self.cameraRect.width * (1 + ZOOM_SPEED))  # Dé-zoom => Augmentation des dimensions du point de vue
-            h = int(self.cameraRect.height * (1 + ZOOM_SPEED))
-            self.cameraRect.width = max(w, self.screenW) # On ne dézoome pas plus que la carte ne le permet
-            self.cameraRect.height = max(h, self.screenH)
-        # self.fov_width  = min(self.fov_width, self.actual_map.get_width())
-        # self.fov_height = min(self.fov_height, self.actual_map.get_height())
+            diffW = cameraW - min(cameraW *(1 + ZOOM_SPEED), self.width)  # On ne dézoome pas plus que la carte ne le permet
+            diffH = cameraH - min(cameraH *(1 + ZOOM_SPEED), self.height)  # Dé-zoom => Augmentation des dimensions du point de vue
+            cameraW = cameraW - diffW
+            cameraH = cameraH - diffH
+            cameraX += diffW/2  # Diff est déjà négatif
+            cameraY += diffH/2
+        self.cameraRect = pygame.Rect(cameraX, cameraY, cameraW, cameraH)
 
     def IsInBounds(self, point):
         x, y = point[0], point[1]
@@ -98,12 +96,10 @@ class WorldRenderer:
         worldY = self.cameraRect.top + y*self.zoomRatio
         return [worldX, worldY]
 
-    def RenderMapOnScreen(self, screen):  # Rendu des informations additionelles des sprites
+    def ClearMap(self):
         self.worldMap.blit(self.mapPicture, (0, 0)) # On efface les anciens dessin sur la carte
-        # POURQUOI EMPTY_BACKGROUND ??????????????
-        screen.blit(self.empty_background, (0, 0)) # Dans l'ordre mapPicture -> worldmap -> camera -> screen
 
-    def UpdateMap(self, dt):
+    def RenderMapOnScreen(self, screen):  # Rendu des informations additionelles des sprites
         def Zoom(self):
             if self.cameraRect != self.previous_cameraRect: # Si la caméra a changé de place ou de taille (taille du rectangle FOV)
                 width_change = self.cameraRect.width != self.previous_cameraRect.width  # Changement de la taille de la caméra
@@ -116,6 +112,15 @@ class WorldRenderer:
         screenSize = (self.screenW, self.screenH) # Dimension de l'écran
         pygame.transform.scale(self.camera, screenSize, self.empty_background) # On agrandit ou rétréssie zoomImage pour qu'il corresponde aux longeurs de l'écran, on rempli le reste avec du vide (emptyBackground)
         self.camera.blit(self.worldMap, (0, 0), self.cameraRect) # On dessine la partie découpé par le rectangle FOV (cameraRect) de la carte sur zoomImage
+        # POURQUOI EMPTY_BACKGROUND ??????????????
+        screen.blit(self.empty_background, (0, 0)) # Dans l'ordre mapPicture -> worldmap -> camera -> screen
+        try:
+            return
+        except pygame.error:  # Apparement screen serait locked lors de la première éxécution, mais c'est insolvable
+            return
+
+    def UpdateMap(self, dt):
+        return
 
 import Packages.WorldComponents.DriveMapGraph as graph
 class HUD:
